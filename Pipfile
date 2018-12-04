@@ -10,6 +10,7 @@ rope = "*"
 
 [packages]
 pymysql = "*"
+requests = "*"
 
 [requires]
 python_version = "3.7"

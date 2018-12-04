@@ -1,4 +1,6 @@
 from conf.database_connection import Database
+import json
+import requests
 
 
 class GetAppConf:
@@ -30,30 +32,46 @@ class GetAppConf:
                 "select id, name, description, icon, created_at from vertical")
             verticals = cursor.fetchall()
 
+            verts = {}
             for vertical in verticals:
                 app_setting = {}
-                app_setting['vertical'] = vertical['name']
+                app_setting['name'] = vertical['name']
                 app_setting['icon'] = vertical['icon']
                 products_vertical = {}
                 for product in products:
                     products_vertical['name'] = product['name']
                     products_vertical['icon'] = product['icon']
-                    category = {}
-                    for category in categoires:
-                        
+                    products_vertical['description'] = product['description']
+                    categories_array = []
+                    lifecycle_array = []
+                    filters_array = []
+                    for category in categories:
+                        category_display = {}
+                        category_display['description'] = category['description']
+                        category_display['name'] = category['name']
+                        categories_array.append(category_display)
+                    products_vertical['categories'] = categories_array
+                    for lifecycle in lifecycles:
+                        lifecycle_array.append(lifecycle['name'])
+                    for filter in filters:
+                        filters_array.append(filter['name'])
                 app_setting['products'] = products_vertical
+                app_setting['lifecycle'] = lifecycle_array
+                app_setting['filters'] = filters_array
                 app_settings.append(app_setting)
-                    # if product['vertical_id'] == vertical['id']:
-                    #     print(product['name'])
-            # for configuration_setting in configuration_settings:
-                # if configuration_setting['config_type'] == 1:
-                #     item = [x for x in categories if x['id'] == configuration_setting['config']]
-                #     categories_display.append(item[0]['name'])
-                #     app_settings['categories'] = (categories_display)
-
-            print(app_settings)
-        except ValueError:
-            print("error " + ValueError.value)
+                verts['verticals'] = app_settings
+            json_object = json.dumps(verts)
+            headers = {
+                'Content-Type': 'application/json',
+            }
+            r = requests.post(
+                'https://us-central1-boeads-store.cloudfunctions.net/verticals', data=json_object, headers=headers)
+            response = r.text
+            print(response)
+        except Exception as e:
+            print("error " + str(e))
+        finally:
+            print("Site configuration finished")
 
 
 app_config = GetAppConf()
