@@ -1,13 +1,14 @@
-from conf.database_connection import Database
+import utilities.database_connection as database
 import json
 import requests
 
 
-class GetAppConf:
+class GetAppConfig:
     # Lets create object to interact with the database
-    def app_configuration(self):
+    @staticmethod
+    def app_configuration():
         try:
-            connection = Database().connect_to_database()
+            connection = database().connect_to_database()
             cursor = connection.cursor()
             cursor.execute(
                 "select id, config_type, config, created_at, product_id from app_config order by product_id")
@@ -34,9 +35,7 @@ class GetAppConf:
             categories_display = []
             verts = {}
             for vertical in verticals:
-                app_setting = {}
-                app_setting['name'] = vertical['name']
-                app_setting['icon'] = vertical['icon']
+                app_setting = {'name': vertical['name'], 'icon': vertical['icon']}
                 prods = []
                 for product in products:
                     products_vertical = {}
@@ -53,8 +52,8 @@ class GetAppConf:
                         for lifecycle in lifecycles:
                             lifecycle_array.append(lifecycle['name'])
                         products_vertical['lifecycles'] = lifecycle_array
-                        for filter in filters:
-                            filters_array.append(filter['name'])
+                        for filter_list in filters:
+                            filters_array.append(filter_list['name'])
                         products_vertical['filters'] = filters_array
                         prods.append(products_vertical)
                 app_setting['products'] = prods
@@ -74,5 +73,5 @@ class GetAppConf:
             print("Site configuration finished")
 
 
-app_config = GetAppConf()
+app_config = GetAppConfig()
 app_config.app_configuration()
