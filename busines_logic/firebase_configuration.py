@@ -1,6 +1,16 @@
 class FirebaseConfiguration:
-    def create_product_configuration(self, verticals, products, categories, life_cycles, filters):
+
+    def __init__(self, _database):
+        self.configuration_data = _database
+
+    def create_product_configuration(self):
         try:
+            verticals = self.configuration_data.get_verticals(self.configuration_data)
+            products = self.configuration_data.get_products(self.configuration_data)
+            categories = self.configuration_data.get_categories(self.configuration_data)
+            life_cycles = self.configuration_data.get_life_cycles(self.configuration_data)
+            filters = self.configuration_data.get_filters(self.configuration_data)
+
             app_settings = []
             verts = {}
             for vertical in verticals:
