@@ -1,77 +1,37 @@
-import utilities.database_connection as database
-import json
-import requests
+import data.dal.get_product_conf as configuration_data
+import utilities.http_operations as http_ops
+import data.dal.constants as constants
+import busines_logic.firebase_configuration as configuration_firebase
 
 
 class GetAppConfig:
-    # Lets create object to interact with the database
-    @staticmethod
-    def app_configuration():
-        try:
-            connection = database().connect_to_database()
-            cursor = connection.cursor()
-            cursor.execute(
-                "select id, config_type, config, created_at, product_id from app_config order by product_id")
-            configuration_settings = cursor.fetchall()
-            cursor.execute(
-                "select id, name, description, created_at from category")
-            categories = cursor.fetchall()
-            cursor.execute("select id, name, created_at from config_type")
-            config_types = cursor.fetchall()
-            cursor.execute(
-                "select id, name, description, created_at from filter")
-            filters = cursor.fetchall()
-            cursor.execute(
-                "select id, name, description, created_at from lifecycle")
-            lifecycles = cursor.fetchall()
-            cursor.execute(
-                "select id, name, description, icon, created_at, vertical_id from product")
-            products = cursor.fetchall()
-            cursor.execute(
-                "select id, name, description, icon, created_at from vertical")
-            verticals = cursor.fetchall()
 
-            app_settings = []
-            categories_display = []
-            verts = {}
-            for vertical in verticals:
-                app_setting = {'name': vertical['name'], 'icon': vertical['icon']}
-                prods = []
-                for product in products:
-                    products_vertical = {}
-                    if vertical['id'] == product['vertical_id']:
-                        products_vertical['name'] = product['name']
-                        products_vertical['icon'] = product['icon']
-                        products_vertical['description'] = product['description']
-                        categories_array = []
-                        lifecycle_array = []
-                        filters_array = []
-                        for category in categories:
-                            categories_array.append(category['name'])
-                        products_vertical['categories'] = categories_array
-                        for lifecycle in lifecycles:
-                            lifecycle_array.append(lifecycle['name'])
-                        products_vertical['lifecycles'] = lifecycle_array
-                        for filter_list in filters:
-                            filters_array.append(filter_list['name'])
-                        products_vertical['filters'] = filters_array
-                        prods.append(products_vertical)
-                app_setting['products'] = prods
-                app_settings.append(app_setting)
-                verts['verticals'] = app_settings
-            json_object = json.dumps(verts)
-            headers = {
-                'Content-Type': 'application/json',
-            }
-            r = requests.post(
-                'https://us-central1-boeads-store.cloudfunctions.net/verticals', data=json_object, headers=headers)
-            response = r.text
-            print(response)
+    # dependency injection and class init
+    def __init__(self, _conf, _http_ops, _constants, _configuration_firebase):
+        self.configuration_data = _conf
+        self.http_operations = _http_ops
+        self.consts = _constants
+        self.config_firebase = _configuration_firebase
+
+    # Lets create object to interact with the database
+    def app_configuration(self):
+        try:
+            verticals = self.configuration_data.get_verticals(self.configuration_data)
+            products = self.configuration_data.get_products(self.configuration_data)
+            categories = self.configuration_data.get_categories(self.configuration_data)
+            life_cycles = self.configuration_data.get_life_cycles(self.configuration_data)
+            filters = self.configuration_data.get_filters(self.configuration_data)
+
+            verts = self.config_firebase.create_product_configuration(self, verticals, products, categories, life_cycles, filters)
+            url = self.consts.post_verticals_to_firebase
+            self.http_operations.make_post(self, url, verts)
+            return True
         except Exception as e:
             print("error " + str(e))
+
         finally:
-            print("Site configuration finished")
+            print("Site configuration Done")
 
 
-app_config = GetAppConfig()
-app_config.app_configuration()
+app_config: GetAppConfig = GetAppConfig(configuration_data.GetProductConf, http_ops.HttpOperations, constants.Constants, configuration_firebase.FirebaseConfiguration).app_configuration()
+
